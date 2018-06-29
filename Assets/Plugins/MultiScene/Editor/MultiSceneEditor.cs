@@ -115,6 +115,7 @@ public class MultiSceneEditor : Editor {
 
 	public override void OnInspectorGUI () {
 		if( target.sceneAssets == null ) return;
+		EditorGUI.BeginChangeCheck();
 		list.DoLayoutList();
 
 		var evt = Event.current;
@@ -152,6 +153,10 @@ public class MultiSceneEditor : Editor {
 			}
 		} else if( evt.type == EventType.DragExited ) {
 			Repaint();
+		}
+
+		if( EditorGUI.EndChangeCheck() ) {
+			EditorUtility.SetDirty( target );
 		}
 	}
 
