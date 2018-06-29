@@ -1,4 +1,4 @@
-Unity Multi-Scene Loader Asset 0.1.0
+Unity Multi-Scene Loader Asset 0.1.1
 ===
 Adds a "Multi-Scene" asset type in the project browser that allows you to compose and save multiple scenes to be opened at once.
 
@@ -25,3 +25,13 @@ This utility adds two new menu items with which to create multi-scenes:
 ## Usage
 
 To open a multi-scene, simply open it in the project window like you would a normal scene!
+
+## Changelog
+
+### 0.1.1
+
+- Properly mark multi-scene assets as dirty when changed
+
+### 0.1.0
+
+- Initial release
