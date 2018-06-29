@@ -9,13 +9,40 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
-[CustomEditor( typeof( ScenePreset ) )]
-public class ScenePresetEditor : Editor {
+[CustomEditor( typeof( MultiScene ) )]
+public class MultiSceneEditor : Editor {
 
-	[MenuItem( "Assets/Create/Scene Preset", false, 201 )]
+	[MenuItem( "Assets/Create/Multi-Scene", false, 201 )]
 	static void CreateMultiScene () {
-		var multi = CreateInstance<ScenePreset>();
-		multi.name = "New Scene Preset";
+		var multi = CreateInstance<MultiScene>();
+		multi.name = "New Multi-Scene";
+
+		var directory = AssetDatabase.GetAssetPath( Selection.activeObject.GetInstanceID() );
+		var isDirectory = Directory.Exists( directory );
+		if( !isDirectory ) {
+			directory = Path.GetDirectoryName( directory );
+		}
+
+		ProjectWindowUtil.CreateAsset( multi, string.Format( "{0}/{1}.asset", directory, multi.name ) );
+	}
+
+	[MenuItem( "Edit/Multi-Scene From Open Scenes %#&s", false, 0 )]
+	static void CreatePresetFromOpenScenes () {
+		var multi = CreateInstance<MultiScene>();
+		multi.name = "New Multi-Scene";
+
+		var activeScene = EditorSceneManager.GetActiveScene();
+		var sceneCount = EditorSceneManager.sceneCount;
+
+		for( int i = 0; i < sceneCount; i++ ) {
+			var scene = EditorSceneManager.GetSceneAt( i );
+
+			var sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>( scene.path );
+			if( activeScene == scene ) {
+				multi.activeScene = sceneAsset;
+			}
+			multi.sceneAssets.Add( sceneAsset );
+		}
 
 		var directory = AssetDatabase.GetAssetPath( Selection.activeObject.GetInstanceID() );
 		var isDirectory = Directory.Exists( directory );
@@ -29,8 +56,8 @@ public class ScenePresetEditor : Editor {
 	[OnOpenAsset( 1 )]
 	static bool OnOpenAsset ( int id, int line ) {
 		var obj = EditorUtility.InstanceIDToObject( id );
-		if( obj is ScenePreset ) {
-			OpenMultiscene( (ScenePreset)obj );
+		if( obj is MultiScene ) {	
+			OpenMultiscene( (MultiScene)obj, Event.current.alt );
 			return true;
 		} else if( obj is SceneAsset ) {
 			if( Event.current.alt ) {
@@ -44,26 +71,26 @@ public class ScenePresetEditor : Editor {
 		}
 	}
 
-	new ScenePreset target;
+	new MultiScene target;
 
 	ScenePresetList list;
 
 	void OnEnable () {
-		target = (ScenePreset)base.target;
+		target = (MultiScene)base.target;
 		list = new ScenePresetList( target, target.sceneAssets, typeof( SceneAsset ) );
 	}
 
-	private static void OpenMultiscene ( ScenePreset obj ) {
+	private static void OpenMultiscene ( MultiScene obj, bool additive ) {
 		if( EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo() ) {
 			for( int i = 0; i < obj.sceneAssets.Count; i++ ) {
 				var scene = obj.sceneAssets[ i ];
 				if( scene == null ) continue;
 				var path = AssetDatabase.GetAssetPath( scene.GetInstanceID() );
-				var mode = i == 0 ? OpenSceneMode.Single : OpenSceneMode.Additive;
+				var mode = ( additive || i > 0 ) ? OpenSceneMode.Additive : OpenSceneMode.Single;
 				EditorSceneManager.OpenScene( path, mode );
 			}
 		}
-		if( obj.activeScene != null ) {
+		if( !additive && obj.activeScene != null ) {
 			EditorSceneManager.SetActiveScene( SceneAssetToScene( obj.activeScene ) );
 		}
 	}
@@ -80,8 +107,6 @@ public class ScenePresetEditor : Editor {
 	public override void OnInspectorGUI () {
 		if( target.sceneAssets == null ) return;
 		list.DoLayoutList();
-
-		var controlId = GUIUtility.GetControlID( FocusType.Passive );
 
 		var evt = Event.current;
 
@@ -122,10 +147,10 @@ public class ScenePresetEditor : Editor {
 	}
 
 	class ScenePresetList : ReorderableList {
-		ScenePreset target;
+		MultiScene target;
 		new List<SceneAsset> list;
 
-		public ScenePresetList ( ScenePreset target, List<SceneAsset> elements, Type elementType ) : base( elements, elementType, true, false, true, true ) {
+		public ScenePresetList ( MultiScene target, List<SceneAsset> elements, Type elementType ) : base( elements, elementType, true, false, true, true ) {
 			this.target = target;
 			this.list = elements;
 
@@ -158,8 +183,10 @@ public class ScenePresetEditor : Editor {
 			EditorGUI.BeginChangeCheck();
 			var check = GUI.Toggle( toggleRect, scene == target.activeScene, GUIContent.none );
 			if( EditorGUI.EndChangeCheck() ) {
-				Undo.RecordObject( target, "Change Active Scene" );
-				target.activeScene = scene;
+				if( check ) {
+					Undo.RecordObject( target, "Change Active Scene" );
+					target.activeScene = scene;
+				}
 			}
 		}
 
