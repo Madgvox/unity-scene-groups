@@ -1,4 +1,10 @@
-﻿using System.Collections.Generic;
+﻿//      
+//   ^\.-
+//  c====ɔ   Crafted with <3 by Nate Tessman
+//   L__J    nate@madgvox.com
+// 
+
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 

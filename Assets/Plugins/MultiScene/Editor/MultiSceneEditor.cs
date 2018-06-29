@@ -1,11 +1,16 @@
-﻿using UnityEditor;
+﻿//      
+//   ^\.-
+//  c====ɔ   Crafted with <3 by Nate Tessman
+//   L__J    nate@madgvox.com
+// 
+
+using UnityEditor;
 using UnityEngine;
 using UnityEditor.SceneManagement;
 using System.IO;
 using UnityEditor.Callbacks;
 using UnityEditorInternal;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
