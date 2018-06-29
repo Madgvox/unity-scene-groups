@@ -17,10 +17,14 @@ public class MultiSceneEditor : Editor {
 		var multi = CreateInstance<MultiScene>();
 		multi.name = "New Multi-Scene";
 
-		var directory = AssetDatabase.GetAssetPath( Selection.activeObject.GetInstanceID() );
-		var isDirectory = Directory.Exists( directory );
-		if( !isDirectory ) {
-			directory = Path.GetDirectoryName( directory );
+		var parent = Selection.activeObject;
+
+		string directory = "Assets";
+		if( parent != null ) {
+			directory = AssetDatabase.GetAssetPath( parent.GetInstanceID() );
+			if( !Directory.Exists( directory ) ) {
+				directory = Path.GetDirectoryName( directory );
+			}
 		}
 
 		ProjectWindowUtil.CreateAsset( multi, string.Format( "{0}/{1}.asset", directory, multi.name ) );
