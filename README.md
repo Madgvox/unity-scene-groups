@@ -27,6 +27,10 @@ This utility adds two new menu items with which to create multi-scenes:
 
 To open a multi-scene, simply open it in the project window like you would a normal scene!
 
+## Known Limitations
+
+- Multi-Scenes cannot be dragged directly into the hierarchy to be added additively like a normal scene. It's unclear if this is even possible using available APIs.
+
 ## Changelog
 
 ### 0.2.0
