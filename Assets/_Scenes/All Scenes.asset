@@ -13,6 +13,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   activeScene: {fileID: 102900000, guid: 752ea13e8b2ddfe4089254703e406133, type: 3}
   sceneAssets:
-  - {fileID: 102900000, guid: 752ea13e8b2ddfe4089254703e406133, type: 3}
-  - {fileID: 102900000, guid: d7c9e007c9fd5184cb3bafbf98ea9203, type: 3}
-  - {fileID: 102900000, guid: 2e74937b2c82ba547a487c08d52ca976, type: 3}
+  - asset: {fileID: 102900000, guid: 752ea13e8b2ddfe4089254703e406133, type: 3}
+    loadScene: 1
+  - asset: {fileID: 102900000, guid: d7c9e007c9fd5184cb3bafbf98ea9203, type: 3}
+    loadScene: 1
+  - asset: {fileID: 102900000, guid: 2e74937b2c82ba547a487c08d52ca976, type: 3}
+    loadScene: 1

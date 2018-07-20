@@ -17,6 +17,15 @@ using UnityEngine.SceneManagement;
 [CustomEditor( typeof( MultiScene ) )]
 public class MultiSceneEditor : Editor {
 
+	static class Styles {
+		public static readonly GUIStyle dragInfoStyle;
+
+		static Styles () {
+			dragInfoStyle = new GUIStyle( EditorStyles.centeredGreyMiniLabel );
+			dragInfoStyle.wordWrap = true;
+		}
+	}
+
 	[MenuItem( "Assets/Create/Multi-Scene", false, 201 )]
 	static void CreateMultiScene () {
 		var multi = CreateInstance<MultiScene>();
@@ -50,7 +59,8 @@ public class MultiSceneEditor : Editor {
 			if( activeScene == scene ) {
 				multi.activeScene = sceneAsset;
 			}
-			multi.sceneAssets.Add( sceneAsset );
+
+			multi.sceneAssets.Add( new MultiScene.SceneInfo( sceneAsset, scene.isLoaded ) );
 		}
 
 		var directory = AssetDatabase.GetAssetPath( Selection.activeObject.GetInstanceID() );
@@ -65,7 +75,7 @@ public class MultiSceneEditor : Editor {
 	[OnOpenAsset( 1 )]
 	static bool OnOpenAsset ( int id, int line ) {
 		var obj = EditorUtility.InstanceIDToObject( id );
-		if( obj is MultiScene ) {	
+		if( obj is MultiScene ) {
 			OpenMultiscene( (MultiScene)obj, Event.current.alt );
 			return true;
 		} else if( obj is SceneAsset ) {
@@ -90,22 +100,56 @@ public class MultiSceneEditor : Editor {
 	}
 
 	private static void OpenMultiscene ( MultiScene obj, bool additive ) {
-		if( EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo() ) {
+		Scene activeScene = default( Scene );
+		if( additive || EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo() ) {
+			var firstUnloadedScenes = new List<string>();
+			var inFirstUnloadedScenes = true;
+			Scene firstLoadedScene = default( Scene );
 			for( int i = 0; i < obj.sceneAssets.Count; i++ ) {
-				var scene = obj.sceneAssets[ i ];
-				if( scene == null ) continue;
-				var path = AssetDatabase.GetAssetPath( scene.GetInstanceID() );
-				var mode = ( additive || i > 0 ) ? OpenSceneMode.Additive : OpenSceneMode.Single;
-				EditorSceneManager.OpenScene( path, mode );
+				var info = obj.sceneAssets[ i ];
+				if( info.asset == null ) continue;
+				var path = AssetDatabase.GetAssetPath( info.asset.GetInstanceID() );
+				var mode = OpenSceneMode.Single;
+				var isActiveScene = info.asset == obj.activeScene;
+
+				var exitedFirstUnloadedScenes = false;
+				if( inFirstUnloadedScenes ) {
+					if( !isActiveScene && !info.loadScene ) {
+						firstUnloadedScenes.Add( path );
+						continue;
+					} else {
+						inFirstUnloadedScenes = false;
+						exitedFirstUnloadedScenes = true;
+					}
+				}
+
+				if( ( !inFirstUnloadedScenes && !exitedFirstUnloadedScenes ) || ( additive && exitedFirstUnloadedScenes ) ) { 
+					if( ( !additive && isActiveScene ) || info.loadScene ) {
+						mode = OpenSceneMode.Additive;
+					} else {
+						mode = OpenSceneMode.AdditiveWithoutLoading;
+					}
+				}
+
+				var scene = EditorSceneManager.OpenScene( path, mode );
+
+				if( isActiveScene ) activeScene = scene;
+				if( exitedFirstUnloadedScenes ) firstLoadedScene = scene;
+			}
+
+			for( int i = 0; i < firstUnloadedScenes.Count; i++ ) {
+				var path = firstUnloadedScenes[ i ];
+				var scene = EditorSceneManager.OpenScene( path, OpenSceneMode.AdditiveWithoutLoading );
+				if( firstLoadedScene.IsValid() ) EditorSceneManager.MoveSceneBefore( scene, firstLoadedScene );
 			}
 		}
-		if( !additive && obj.activeScene != null ) {
-			EditorSceneManager.SetActiveScene( SceneAssetToScene( obj.activeScene ) );
+		if( !additive && activeScene.IsValid() ) {
+			EditorSceneManager.SetActiveScene( activeScene );
 		}
 	}
 
 	static Scene SceneAssetToScene ( SceneAsset asset ) {
-		return EditorSceneManager.GetSceneByName( asset.name );
+		return EditorSceneManager.GetSceneByPath( AssetDatabase.GetAssetPath( asset ) );
 	}
 
 	protected override void OnHeaderGUI () {
@@ -137,12 +181,14 @@ public class MultiSceneEditor : Editor {
 
 				if( evt.type == EventType.DragPerform ) {
 					Undo.RecordObject( target, "Add Scenes" );
+					GUI.changed = true;
 					foreach( var obj in objects ) {
 						var scene = (SceneAsset)obj;
-						if( !target.sceneAssets.Contains( scene ) ) {
-							target.sceneAssets.Add( scene );
-							GUI.changed = true;
+						var index = target.sceneAssets.FindIndex( i => i.asset == scene );
+						if( index > -1 ) {
+							target.sceneAssets.RemoveAt( index );
 						}
+						target.sceneAssets.Add( new MultiScene.SceneInfo( scene ) );
 					}
 				}
 			}
@@ -158,13 +204,20 @@ public class MultiSceneEditor : Editor {
 		if( EditorGUI.EndChangeCheck() ) {
 			EditorUtility.SetDirty( target );
 		}
+
+		EditorGUILayout.Space();
+
+		GUILayout.Label( "Drag and drop scenes into the inspector window to append them to the list.", Styles.dragInfoStyle );
 	}
 
 	class ScenePresetList : ReorderableList {
-		MultiScene target;
-		new List<SceneAsset> list;
+		static readonly GUIContent loadSceneContent = new GUIContent( string.Empty, "Load Scene" );
+		static readonly GUIContent activeSceneContent = new GUIContent( string.Empty, "Set Active Scene" );
 
-		public ScenePresetList ( MultiScene target, List<SceneAsset> elements, Type elementType ) : base( elements, elementType, true, false, true, true ) {
+		MultiScene target;
+		new List<MultiScene.SceneInfo> list;
+
+		public ScenePresetList ( MultiScene target, List<MultiScene.SceneInfo> elements, Type elementType ) : base( elements, elementType, true, false, true, true ) {
 			this.target = target;
 			this.list = elements;
 
@@ -175,7 +228,15 @@ public class MultiSceneEditor : Editor {
 		}
 
 		void DrawHeader ( Rect rect ) {
-			GUI.Label( rect, "Scenes" );
+			const int toggleWidth = 17;
+
+			var loadSceneRect = new Rect( rect.x + rect.width - toggleWidth * 2, rect.y, toggleWidth, rect.height );
+			var activeSceneRect = new Rect( rect.x + rect.width - toggleWidth, rect.y, toggleWidth, rect.height );
+			var labelRect = new Rect( rect.x, rect.y, rect.width - ( toggleWidth * 2 ) - 5, EditorGUIUtility.singleLineHeight );
+
+			GUI.Label( labelRect, "Scenes" );
+			GUI.Label( loadSceneRect, "L" );
+			GUI.Label( activeSceneRect, "A" );
 		}
 
 		void DrawElement ( Rect rect, int index, bool isActive, bool isFocused ) {
@@ -183,36 +244,53 @@ public class MultiSceneEditor : Editor {
 
 			const int toggleWidth = 17;
 
-			var toggleRect = new Rect( rect.x + rect.width - toggleWidth, rect.y, toggleWidth, rect.height );
-			var labelRect = new Rect( rect.x, rect.y, rect.width - toggleRect.width - 5, EditorGUIUtility.singleLineHeight );
+			var loadSceneRect = new Rect( rect.x + rect.width - toggleWidth * 2, rect.y, toggleWidth, rect.height );
+			var activeSceneRect = new Rect( rect.x + rect.width - toggleWidth, rect.y, toggleWidth, rect.height );
+			var labelRect = new Rect( rect.x, rect.y, rect.width - ( toggleWidth * 2 ) - 5, EditorGUIUtility.singleLineHeight );
 
-			SceneAsset scene = list[ index ];
+			MultiScene.SceneInfo info = list[ index ];
 			EditorGUI.BeginChangeCheck();
-			scene = (SceneAsset)EditorGUI.ObjectField( labelRect, scene, typeof( SceneAsset ), false );
+			var scene = (SceneAsset)EditorGUI.ObjectField( labelRect, info.asset, typeof( SceneAsset ), false );
 			if( EditorGUI.EndChangeCheck() ) {
 				Undo.RecordObject( target, "Change Scene" );
-				target.sceneAssets[ index ] = scene;
+				info.asset = scene;
+				target.sceneAssets[ index ] = info;
 			}
 
+			var active = info.asset == target.activeScene;
+			GUI.enabled = !active;
 			EditorGUI.BeginChangeCheck();
-			var check = GUI.Toggle( toggleRect, scene == target.activeScene, GUIContent.none );
+			var loadScene = GUI.Toggle( loadSceneRect, info.loadScene, loadSceneContent );
 			if( EditorGUI.EndChangeCheck() ) {
-				if( check ) {
+				Undo.RecordObject( target, "Change Load Scene" );
+				info.loadScene = loadScene;
+				target.sceneAssets[ index ] = info;
+			}
+			GUI.enabled = true;
+
+			EditorGUI.BeginChangeCheck();
+			var setActive = GUI.Toggle( activeSceneRect, active, activeSceneContent );
+			if( EditorGUI.EndChangeCheck() ) {
+				if( setActive ) {
 					Undo.RecordObject( target, "Change Active Scene" );
-					target.activeScene = scene;
+					target.activeScene = info.asset;
 				}
 			}
 		}
 
 		void OnRemove ( ReorderableList l ) {
 			Undo.RecordObject( target, "Remove Scene" );
+			var removed = target.sceneAssets[ index ];
+			if( removed.asset == target.activeScene ) {
+				target.activeScene = null;
+			}
 			target.sceneAssets.RemoveAt( index );
 		}
 
 		void OnAdd ( ReorderableList l ) {
 			index = list.Count;
 			Undo.RecordObject( target, "Add Scene" );
-			list.Add( default( SceneAsset ) );
+			list.Add( default( MultiScene.SceneInfo ) );
 		}
 	}
 }
