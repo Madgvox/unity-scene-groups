@@ -17,14 +17,33 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 public class MultiSceneDragHandler { 
-        // public delegate DragAndDropVisualMode CustomDraggingDelegate(GameObjectTreeViewItem parentItem, GameObjectTreeViewItem targetItem, DropPosition dropPos, bool perform);
+		// 2018.3 introduced this internal custom dragging handler:
+        //   public delegate DragAndDropVisualMode CustomDraggingDelegate(GameObjectTreeViewItem parentItem, GameObjectTreeViewItem targetItem, DropPosition dropPos, bool perform);
+		// in all previous versions it doesn't exist. Instead we'll need to create a wrapper class that implements the ITreeViewDragging interface
+		// and replace the dragging variable in the m_TreeView field in the SceneHierarchyWindow window.
 
 	static Type GameObjectTreeViewItem;
 	static Type TreeViewDragging_DropPosition;
+	static Type GameObjectsTreeViewDragging;
+	static Type GameObjectsTreeViewDragging_CustomDraggingDelegate;
 
-	static void InitTypes () {
-		GameObjectTreeViewItem = Type.GetType( "GameObjectTreeViewItem" );
-		TreeViewDragging_DropPosition = Type.GetType( "TreeViewDragging.DropPosition" );
+	public static void InitTypes () {
+		var editorAssembly = Assembly.GetAssembly( typeof( SceneView ) );
+		GameObjectTreeViewItem = editorAssembly.GetType( "UnityEditor.GameObjectTreeViewItem" );
+		TreeViewDragging_DropPosition = editorAssembly.GetType( "UnityEditor.IMGUI.Controls.TreeViewDragging" ).GetNestedType( "DropPosition", BindingFlags.Public );
+		GameObjectsTreeViewDragging = editorAssembly.GetType( "UnityEditor.GameObjectsTreeViewDragging" );
+		var membs = GameObjectsTreeViewDragging.GetMembers();
+
+		foreach( var m in membs ) {
+			Debug.Log( m );
+		}
+
+		Debug.Log( GameObjectTreeViewItem );
+		Debug.Log( TreeViewDragging_DropPosition );
+		Debug.Log( GameObjectsTreeViewDragging );
+		Debug.Log( GameObjectsTreeViewDragging_CustomDraggingDelegate );
+
+		return;
 
 		var argTypes = new [] {
 			GameObjectTreeViewItem,
@@ -33,7 +52,19 @@ public class MultiSceneDragHandler {
 			typeof( bool )
 		};
 
-		var draggingDelegate = new DynamicMethod( "MultiSceneDraggingDelegate", typeof( DragAndDropVisualMode ), argTypes );
+		var draggingMethod = new DynamicMethod( "MultiSceneDraggingDelegate", typeof( DragAndDropVisualMode ), argTypes );
+		var g = draggingMethod.GetILGenerator();
+
+		var methodType = typeof( MultiSceneDragHandler ).GetMethod( "InternalMethod", BindingFlags.Static );
+
+		g.Emit( OpCodes.Ldarg_0 );
+		g.Emit( OpCodes.Ldarg_1 );
+		g.Emit( OpCodes.Ldarg_2 );
+		g.Emit( OpCodes.Ldarg_3 );
+		g.Emit( OpCodes.Call, methodType );
+		g.Emit( OpCodes.Ret );
+
+		// Delegate draggingDelegate = draggingMethod.CreateDelegate( GameObjectsTreeViewDragging_CustomDraggingDelegate );
 	}
 
 	enum SomeEnum {
@@ -44,7 +75,8 @@ public class MultiSceneDragHandler {
 		return InternalMethod( parentItem, targetItem, dropPos, perform );
 	}
 
-	DragAndDropVisualMode InternalMethod ( object parentItem, object targetItem, object dropPos, bool perform ) {
+	static DragAndDropVisualMode InternalMethod ( object parentItem, object targetItem, object dropPos, bool perform ) {
+		Debug.Log( "MADE IT" );
 		return DragAndDropVisualMode.None;
 	}
 }
@@ -140,6 +172,8 @@ public class MultiSceneEditor : Editor {
 	void OnEnable () {
 		target = (MultiScene)base.target;
 		list = new ScenePresetList( target, target.sceneAssets, typeof( SceneAsset ) );
+
+		MultiSceneDragHandler.InitTypes();
 	}
 
 	private static void OpenMultiscene ( MultiScene obj, bool additive ) {
