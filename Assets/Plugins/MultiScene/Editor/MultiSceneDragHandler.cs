@@ -18,8 +18,6 @@ public class MultiSceneDragHandler {
 	}
 
 	public static DragAndDropVisualMode DoDrag ( object parentItem, object targetItem, bool perform, DropPosition dropPosition ) {
-		Debug.Log( "Hello" );
-		return 0;
 		const string kSceneHeaderDragString = "SceneHeaderList";
 		
 		bool insertNewScenes = true;
