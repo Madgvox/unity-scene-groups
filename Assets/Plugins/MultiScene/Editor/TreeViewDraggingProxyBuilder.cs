@@ -61,7 +61,6 @@ public class TreeViewDraggingProxyBuilder {
 				TypeCache._GameObjectsTreeViewDragging );
 	}
 
-
 	/*
 	 *     public TreeViewDraggingProxy ( TreeViewController controller ) : base( controller ) {}
 	 */
@@ -87,19 +86,6 @@ public class TreeViewDraggingProxyBuilder {
 		g.Emit( OpCodes.Call, baseConstructor ); // this.base( arg_1 );
 
 		g.Emit( OpCodes.Ret );
-	}
-
-	static void EmitDebugLog ( ILGenerator g, string message ) {
-		var Log = typeof( Debug ).GetMethod( "Log", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof( object ) }, null );
-		g.Emit( OpCodes.Ldstr, message );
-		g.Emit( OpCodes.Call, Log );
-	}
-
-	static void EmitDebugLog ( ILGenerator g, OpCode opCode, Type valueType = null ) {
-		var Log = typeof( Debug ).GetMethod( "Log", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof( object ) }, null );
-		g.Emit( opCode );
-		if( valueType != null ) g.Emit( OpCodes.Box, valueType );
-		g.Emit( OpCodes.Call, Log );
 	}
 
 	/*     public override DragAndDropVisualMode DoDrag( TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPosition ) {
