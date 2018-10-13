@@ -120,8 +120,6 @@ public class TreeViewDraggingProxyBuilder {
 
 		var doDrag = TypeCache._MultiSceneDragHandler.GetMethod( "DoDrag", BindingFlags.Public | BindingFlags.Static );
 
-		EmitDebugLog( g, "HUE" );
-
 		g.Emit( OpCodes.Ldarg_1 ); 
 		g.Emit( OpCodes.Ldarg_2 ); 
 		g.Emit( OpCodes.Ldarg_3 ); 
