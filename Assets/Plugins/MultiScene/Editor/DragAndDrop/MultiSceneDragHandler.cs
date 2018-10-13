@@ -10,7 +10,7 @@ using UnityEditor.SceneManagement;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
-public class MultiSceneDragHandler { 
+public class MultiSceneDragHandler {
 	public enum DropPosition {
 		Upon = 0,
 		Below = 1,
@@ -57,8 +57,8 @@ public class MultiSceneDragHandler {
 			}
 
 			if( targetItem != null ) {
-				Debug.Log( "setting generic data" );
 				DragAndDrop.SetGenericData( kSceneHeaderDragString, sceneList );
+				return DragAndDropVisualMode.None;  // return None so that we can use Unity's default scene re-ordering behaviour
 			}
 		}
 
@@ -70,14 +70,13 @@ public class MultiSceneDragHandler {
 		Scene scene = SceneManager.GetSceneByPath( scenePath );
 
 		if( scene.IsValid() ) {
-			// scene is already loaded, reorder?
-		}
-
-		bool unloaded = !loaded || Event.current.alt;
-		if ( unloaded ) {
-			scene = EditorSceneManager.OpenScene( scenePath, OpenSceneMode.AdditiveWithoutLoading );
 		} else {
-			scene = EditorSceneManager.OpenScene( scenePath, OpenSceneMode.Additive );
+			bool unloaded = !loaded || Event.current.alt;
+			if( unloaded ) {
+				scene = EditorSceneManager.OpenScene( scenePath, OpenSceneMode.AdditiveWithoutLoading );
+			} else {
+				scene = EditorSceneManager.OpenScene( scenePath, OpenSceneMode.Additive );
+			}
 		}
 
 		return scene;

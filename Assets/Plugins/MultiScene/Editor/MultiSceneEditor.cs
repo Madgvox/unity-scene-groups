@@ -22,7 +22,7 @@ public class MultiSceneEditor : Editor {
 
 	[InitializeOnLoadMethod]
 	static void InitializeCustomDrag () {
-		proxyType = TreeViewDraggingProxyBuilder.BuildType();
+		proxyType = GameObjectsTreeViewDraggingProxyBuilder.BuildType();
 
 		if( proxyType == null ) {
 			// we're pre-2017, don't inject anything
@@ -37,56 +37,13 @@ public class MultiSceneEditor : Editor {
 		foreach( var window in hierarchyWindows ) {
 			// avoid nullreference by making sure last interacted hierarchy is set
 			SetAsLastInteractedHierarchy.Invoke( window, null );
+
 			var treeView = treeViewProp.GetValue( window, null );
-			Debug.Log( "in value " + originalField.GetValue( treeView, null ) );
-			var original = originalField.GetValue( treeView, null );
 			var proxy = Activator.CreateInstance( proxyType, treeView );
 
-			// Debug.Log( proxy.GetType() );
-			// Debug.Log( treeView );
-			// Debug.Log( originalField.PropertyType );
-
 			originalField.SetValue( treeView, proxy, null );
-			Debug.Log( "out value " + originalField.GetValue( treeView, null ) );
 		}
 	}
-
-	// static double countdown;
-	// static double lastTime;
-	// static void WaitForHierarchyInit () {
-	// 	var time = EditorApplication.timeSinceStartup;
-	// 	var deltaTime = time - lastTime;
-
-	// 	if( countdown > 0 ) {
-	// 		lastTime = time;
-	// 		countdown -= deltaTime;
-	// 		return;
-	// 	}
-
-	// 	countdown = 2;
-	// }
-
-	// static void Init () {
-	// 	EditorApplication.update -= Init;
-
-	// 	var dragging = TreeViewController.GetProperty( "dragging", BindingFlags.Instance | BindingFlags.Public );
-	// 	var windows = Resources.FindObjectsOfTypeAll( SceneHierarchyWindow );
-	// 	var shw_m_TreeView = SceneHierarchyWindow.GetField( "m_TreeView", BindingFlags.Instance | BindingFlags.NonPublic );
-	// 	var wrapperType = TreeViewDraggingProxy = builder.CreateType();
-
-	// 	foreach( var win in windows ) {
-	// 		var treeView = shw_m_TreeView.GetValue( win );
-	// 		// Debug.Log( shw_m_TreeView );
-	// 		// Debug.Log( win );
-	// 		Debug.Log( treeView );
-	// 		// var existing = dragging.GetValue( treeView, null );
-	// 		// Debug.Log( existing );
-	// 		// var instance = Activator.CreateInstance( wrapperType, existing, treeView );
-	// 		// Debug.Log( instance );
-	// 		// Debug.Log( dragging.PropertyType );
-	// 		// dragging.SetValue( treeView, instance, null );
-	// 	}
-	// }
 
 	static class Content {
 		public static readonly GUIContent listTitle              = new GUIContent( "Scenes" );

@@ -8,7 +8,6 @@ using UnityEditor;
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
-using UnityEngine;
 
 public class TypeCache {
 
@@ -29,40 +28,35 @@ public class TypeCache {
 }
 
 #if UNITY_2017_1_OR_NEWER
-public class TreeViewDraggingProxyBuilder {
+public class GameObjectsTreeViewDraggingProxyBuilder {
 	const string ASM_NAME        = "MultiSceneRuntime";
-	const string PROXY_TYPE_NAME = "TreeViewDraggingProxy";
+	const string PROXY_TYPE_NAME = "GameObjectsTreeViewDraggingProxy";
 
 	public static Type BuildType () {
 		var builder = BuildTypeBuilder();
-
 		BuildConstructor( builder );
-
 		BuildDoDragMethod( builder );
 
 		return builder.CreateType();
 	}
 
-	/* This method generates the equivalent of this code:
-	 *
-	 *     public class TreeViewDraggingProxy : GameObjectsTreeViewDragging {
-	 */
 	static TypeBuilder BuildTypeBuilder () {
 		var asmName = new AssemblyName( string.Format( "{0}_{1}", ASM_NAME, Guid.NewGuid().ToString( "N" ) ) );
 		AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly( asmName, AssemblyBuilderAccess.Run );
 		ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule( "core" );
 
 		return moduleBuilder.DefineType( PROXY_TYPE_NAME,
-				TypeAttributes.Public |
-				TypeAttributes.Class |
-				TypeAttributes.AutoClass |
-				TypeAttributes.AnsiClass |
-				TypeAttributes.AutoLayout,
-				TypeCache._GameObjectsTreeViewDragging );
+			TypeAttributes.Public |
+			TypeAttributes.Class |
+			TypeAttributes.AutoClass |
+			TypeAttributes.AnsiClass |
+			TypeAttributes.AutoLayout,
+			TypeCache._GameObjectsTreeViewDragging
+		);
 	}
 
 	/*
-	 *     public TreeViewDraggingProxy ( TreeViewController controller ) : base( controller ) {}
+	 *     public GameObjectsTreeViewDraggingProxy ( TreeViewController controller ) : base( controller ) {}
 	 */
 	static void BuildConstructor ( TypeBuilder builder ) {
 		var baseConstructor = TypeCache._TreeViewDragging.GetConstructor( 
@@ -81,9 +75,9 @@ public class TreeViewDraggingProxyBuilder {
 
 		var g = constructorBuilder.GetILGenerator();
 
-		g.Emit( OpCodes.Ldarg_0 ); // push `this`
-		g.Emit( OpCodes.Ldarg_1 ); // push arg_1
-		g.Emit( OpCodes.Call, baseConstructor ); // this.base( arg_1 );
+		g.Emit( OpCodes.Ldarg_0 );
+		g.Emit( OpCodes.Ldarg_1 );
+		g.Emit( OpCodes.Call, baseConstructor );
 
 		g.Emit( OpCodes.Ret );
 	}
@@ -118,13 +112,13 @@ public class TreeViewDraggingProxyBuilder {
 
 		var noDragResult = g.DefineLabel();
 
-		var doDrag = TypeCache._MultiSceneDragHandler.GetMethod( "DoDrag", BindingFlags.Public | BindingFlags.Static );
+		var handler = TypeCache._MultiSceneDragHandler.GetMethod( "DoDrag", BindingFlags.Public | BindingFlags.Static );
 
 		g.Emit( OpCodes.Ldarg_1 ); 
 		g.Emit( OpCodes.Ldarg_2 ); 
 		g.Emit( OpCodes.Ldarg_3 ); 
 		g.Emit( OpCodes.Ldarg_S, 4 );
-		g.Emit( OpCodes.Call, doDrag ); 
+		g.Emit( OpCodes.Call, handler ); 
 		g.Emit( OpCodes.Stloc_0 );
 
 		g.Emit( OpCodes.Ldloc_0 );
