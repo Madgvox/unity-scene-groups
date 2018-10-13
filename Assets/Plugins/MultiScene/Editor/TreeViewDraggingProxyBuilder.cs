@@ -10,6 +10,22 @@ using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 
+public abstract class A {
+	public abstract void Foo ();
+}
+
+public class B : A {
+	public override void Foo () {
+
+	} 
+}
+
+public class C : B {
+	public override void Foo () {
+		base.Foo();
+	}
+}
+
 public class TypeCache {
 
 	public static readonly Type _TreeViewDragging;
