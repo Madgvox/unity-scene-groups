@@ -1,8 +1,8 @@
-Unity Multi-Scene Loader Asset 0.2.0
+Unity Scene Groups 0.2.0
 ===
-Adds a "Multi-Scene" asset type in the project browser that allows you to compose and save multiple scenes to be opened at once.
+Adds a "Scene Group" asset type in the project browser that allows you to compose and save multiple scenes to be opened at once.
 
-![Multi-Scene In Action](https://i.imgur.com/axA9AJX.gif)
+![Scene Groups In Action](https://i.imgur.com/axA9AJX.gif)
 
 A unitypackage version can be found in the releases for easy importing to any project.
 
@@ -16,31 +16,31 @@ A unitypackage version can be found in the releases for easy importing to any pr
 
 ## Preset Creation
 
-This utility adds two new menu items with which to create multi-scenes:
+This utility adds two new menu items with which to create scene groups:
 
-1. `Edit > Multi-Scene From Open Scenes` will create a multi-scene from the currently open scenes. This also has the default shortcut of `Ctrl+Shift+Alt+S`.
+1. `Edit > Scene Group From Open Scenes` will create a scene groups from the currently open scenes. This also has the default shortcut of `Ctrl+Shift+Alt+S`.
 
-2. `Assets > Create > Multi-Scene` will make a new empty multi-scene asset.
+2. `Assets > Create > Scene Group` will make a new empty scene group asset.
 
 
 ## Usage
 
-To open a multi-scene, simply open it in the project window like you would a normal scene!
+To open a scene group, simply open it in the project window like you would a normal scene!
 
 ## Known Limitations
 
-- Multi-Scenes cannot be dragged directly into the hierarchy to be added additively like a normal scene. It's unclear if this is even possible using available APIs.
+- Scene Groups cannot be dragged directly into the hierarchy to be added additively like a normal scene. It's unclear if this is even possible using available APIs.
 
 ## Changelog
 
 ### 0.2.0
 
-- **Breaking Change**: Now supports adding unloaded scenes to your MultiScene assets. This is a breaking change to previous versions.
+- **Breaking Change**: Now supports adding unloaded scenes to your SceneGroup assets. This is a breaking change to previous versions.
 - Some additional labels added for clarity.
 
 ### 0.1.1
 
-- Properly mark multi-scene assets as dirty when changed
+- Properly mark scene group assets as dirty when changed
 
 ### 0.1.0
 
